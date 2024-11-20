@@ -8,9 +8,11 @@ from flask_restful import Api,Resource
 from run import app
 from flask_jwt_extended import JWTManager,jwt_required,get_jwt_identity,create_access_token,create_refresh_token
 import datetime
+from flask_cors import CORS
 
 api=Api(app=app)
 jwt=JWTManager(app=app)
+CORS(app=app)
 
 class Home(Resource):
     def get(self):
@@ -26,7 +28,7 @@ class Signup(Resource):
             if user or user1:
                 return make_response({"msg":"User exists. Proceed to login"},400)
             new_user=User(username=data.get("username"),email=data.get("email"),password=generate_password_hash(data.get("password")),
-                          created_at=datetime.datetime.now(),role="Client")
+                          created_at=datetime.datetime.now(),role=data.get("role","client"))
             db.session.add(new_user)
             db.session.commit()
             return make_response(new_user.to_dict(),201)
@@ -50,26 +52,32 @@ api.add_resource(Login,'/login')
 
 class Create_Get_Auction(Resource):
     #creates an auction and retrieves all existing auctions
-    @jwt_required()
+    # @jwt_required()
     def get(self):#retrieves all auctions
         auctions=Auction.query.all()
         return make_response([auction.to_dict() for auction in auctions],200)
     
-    @jwt_required()
+    # @jwt_required()
     def post(self):
-        user_id=get_jwt_identity()
-        if user_id:
-            user=User.query.filter_by(user_id=user_id).first()
-            if user.role in ["Admin"]: #restricts creation of a new auction to admins and their assistants only 
-                data=request.get_json()
-                if "name" in data and "start_time" in data and 'end_time' in data:
-                    new_auction=Auction(name=data.get("name"),start_time=data.get("start_time"),end_time=data.get("end_time"))
-                    db.session.add(new_auction)
-                    db.session.commit()
-                    return make_response(new_auction.to_dict(),201)
-                return make_response({"msg":"Required data is missing"},400)
-            return make_response({"msg":"You are not authorized"},400)
-        return make_response({"msg":"Identity processing failed"},412)
+        data=request.get_json()
+        if "name" in data and "start_time" in data and 'end_time' in data and 'date' in data:
+            # print(data)
+            new_auction=Auction(name=data.get("name"),start_time=data.get("start_time"),end_time=data.get("end_time"),status="Upcoming", date=data.get("date"))
+            db.session.add(new_auction)
+            db.session.commit()
+            return make_response(new_auction.to_dict(),201)
+            # return make_response(data,200)
+        return make_response({"msg":"Required data is missing"},200)
+        # user_id=get_jwt_identity()
+        # if user_id:
+        #     user=User.query.filter_by(user_id=user_id).first()
+        #     if user.role  =="Admin": #restricts creation of a new auction to admins and their assistants only 
+        #         data=request.get_json()
+        #         print(data)
+                
+        #         return make_response({"msg":"Required data is missing"},400)
+        #     return make_response({"msg":"You are not authorized"},400)
+        # return make_response({"msg":"Identity processing failed"},412)
 api.add_resource(Create_Get_Auction,'/auctions')
 
 class Auction_By_Id(Resource):

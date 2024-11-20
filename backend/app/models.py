@@ -55,16 +55,17 @@ class Image(db.Model,SerializerMixin):
 class Auction(db.Model,SerializerMixin):
     __tablename__ = 'auctions'
     auction_id = db.Column(db.Integer, primary_key=True)
-    name=db.Column(db.String(120),nullable=False)
-    start_time = db.Column(db.DateTime, nullable=False)
-    end_time = db.Column(db.DateTime, nullable=False)
-    status = db.Column(db.String(20), nullable=False)
+    name=db.Column(db.String,nullable=False)
+    date=db.Column(db.String,nullable=False)
+    start_time = db.Column(db.String, nullable=False)
+    end_time = db.Column(db.String, nullable=False)
+    status = db.Column(db.String, nullable=False)
 
     # Relationships
     items=db.relationship("Item",back_populates="auction")
     
     #serialise rules
-    serialize_rules=('-items.auction')
+    serialize_rules=('-items.auction',)
 
 class Bid(db.Model,SerializerMixin):
     __tablename__ = 'bids'
